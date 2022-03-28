@@ -6,8 +6,8 @@ export async function main(ns) {
 	var currentMoney = await ns.getServerMoneyAvailable(server);
 	const maxMoney = await ns.getServerMaxMoney(server);
 	// set threshholds
-	const resetThreshold = maxMoney*.5;
-	const targetThreshold = maxMoney*.8;
+	const resetThreshold = maxMoney*.85;
+	const targetThreshold = maxMoney*.99;
 	// monitor
     while(true) {
 		if (currentMoney < resetThreshold) {

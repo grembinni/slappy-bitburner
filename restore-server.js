@@ -12,15 +12,12 @@ export async function main(ns) {
 		var availableRam = await getAvailableRam(ns, targetServer);
 		var growRam = ns.getScriptRam("grow-server.js");	
 		var weakenRam = ns.getScriptRam("weaken-server.js");
-		var hackRam = ns.getScriptRam("hack-server.js");
-		if (availableRam > (growRam + weakenRam + hackRam)) {
-			var threads = getThreadcount(availableRam, growRam, weakenRam, hackRam);
-			ns.tprint(targetServer + " " + threads[0] + " " + threads[1] + " " + threads[2]);
-			await startScript(ns, "grow-server.js", targetServer, threads[0]);
-			await startScript(ns, "weaken-server.js", targetServer, threads[1]);
-			await startScript(ns, "hack-server.js", targetServer, threads[2]);
+		if (availableRam > (growRam + weakenRam)) {
+			var threads = getGrowThreadcount(availableRam, growRam, weakenRam);
+			await startScript(ns, "grow-server.js", targetServer, threads);
+			await startScript(ns, "weaken-server.js", targetServer, 1);
 		} else {
-			ns.tprint("not enough ram to restart " + targetServer);
+			ns.tprint("not enough ram to restore " + targetServer);
 		}
 	}
 }
@@ -43,17 +40,9 @@ async function getAvailableRam(ns, server) {
 }
 
 /** todo */
-function getThreadcount(availableRam, growRam, weakenRam, hackRam) {
-
-	var [growWeight, weakenWeight, hackWeight] = [7*growRam, 2*weakenRam, 1*hackRam];
-	var baseWeight = growWeight + weakenWeight + hackWeight;
-	var baseRam = availableRam - growRam - weakenRam - hackRam;
-	var [growRatio, weakenRatio, hackRatio] = [growWeight/baseWeight, weakenWeight/baseWeight, hackWeight/baseWeight];
-	var growCount = 1 + parseInt(baseRam*growRatio/growRam);
-	var weakenCount = 1 + parseInt(baseRam*weakenRatio/weakenRam);
-	var hackCount = 1 + parseInt(baseRam*hackRatio/hackRam);
-
-	return [growCount, weakenCount, hackCount];
+function getGrowThreadcount(availableRam, growRam, weakenRam) {
+	var remainingRam = availableRam - weakenRam;
+	return parseInt(remainingRam/growRam);
 }
 
 /** todo */

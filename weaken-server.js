@@ -6,13 +6,13 @@ export async function main(ns) {
 	var currentLevel = await ns.getServerSecurityLevel(server);
 	const minLevel = await ns.getServerMinSecurityLevel(server);
 	// set thresholds
-	const resetThreshold = minLevel*1.3;
-	const targetThreshold = minLevel*1.05;
+	const resetThreshold = minLevel*1.15;
+	const targetThreshold = minLevel*1.02;
 	// monitor
-	while(true) {
+	while(canWeaken(server)) {
 		if (resetThreshold < currentLevel) {
-			while (targetThreshold < currentLevel) {
-				levelChange = await ns.weaken(server);
+			while (targetThreshold <= currentLevel) {
+				var levelChange = await ns.weaken(server);
 				currentLevel = currentLevel - levelChange;
 			}
 		} else {
@@ -20,4 +20,9 @@ export async function main(ns) {
 			currentLevel = await ns.getServerSecurityLevel(server);
 		}
 	}
+}
+
+/** filter of servers not to hack */
+ async function canWeaken(server) {
+	return server != "home";
 }
