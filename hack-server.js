@@ -1,25 +1,28 @@
 /** @param {NS} ns **/
 export async function main(ns) {
 	// parse args
-	var server = ns.args[0] ?? "n00dles";
-	// hack
-	while (await canHack(server)) {
-		var threshold = await hasFunds(ns, server);
-		if ( .7 < threshold) {
+	var server = ns.args[0] ?? 'n00dles';
+	var hackThreshold = ns.args[1] ?? .8;
+
+	// hack or grow
+	while (canHack(server)) {
+		var fundThreshold = await hasFunds(ns, server);
+		if ( hackThreshold < fundThreshold) {
 			await ns.hack(server);
 		} else {
-			await ns.sleep(50000);
+			await ns.grow(server);
 		}
 	}
 }
 
 /** filter of servers not to hack */
- async function canHack(server) {
-	return server != "home";
+function canHack(server) {
+	return server != 'home';
 }
 
+/** check the funds on the target server */
 async function hasFunds(ns, server) {	
 	var maxMoney = await ns.getServerMaxMoney(server);
 	var moneyAvailable = await ns.getServerMoneyAvailable(server);
-	return (moneyAvailable / maxMoney).toFixed(2);
+	return (moneyAvailable / maxMoney).toFixed(3);
 }

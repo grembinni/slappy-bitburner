@@ -1,129 +1,110 @@
 /** @param {NS} ns **/
 export async function main(ns) {
-	// parse args
-	var nodeCount = await ns.hacknet.numNodes();	
-	var upgradeThreshold = 1000000;
-	// todo on 0 nodes
+	// parse args	
+	var costThreshold = ns.args[0] ?? 100000;
+	var costThresholdRate = ns.args[1] ?? 1.33;
+	// disable noise
+	ns.disableLog('sleep');	
 	// todo	
-	var stepsSkipped = 0;
-	while (stepsSkipped < 4) {
-		stepsSkipped = 0;
+	var upgradesAvailable = true;
+	var nodeCount = await ns.hacknet.numNodes();
+	while (upgradesAvailable) {
+		ns.print('current cost threshold: $' + costThreshold);
 		// create node
-		if (nodeCount < 24) {
-			await updateNode(ns, upgradeThreshold, nodeCount);
-			nodeCount = await ns.hacknet.numNodes();
-		} else {
-			stepsSkipped = stepsSkipped + 1;
-		}
+		var nodeUpdateable = await addNode(ns, costThreshold, nodeCount, 24);
+		nodeCount = await ns.hacknet.numNodes();
+		await ns.sleep(500);
+		ns.print('current node count: ' + nodeCount);
 		// upgrade nodes
 		for (var i = 0; i < nodeCount; i++) {
 			var nodeStats = await ns.hacknet.getNodeStats(i);
-			var _stepsSkipped = stepsSkipped;
-			// ns.tprint(nodeStats);
-			if (nodeStats.level < 200) {
-				await updateLevel(ns, i, upgradeThreshold, nodeStats.level);
-			} else {
-				_stepsSkipped = _stepsSkipped + 1;
-			}
-			if (nodeStats.ram < 32) {
-				await updateRAM(ns, i, upgradeThreshold, nodeStats.ram);
-			} else {
-				_stepsSkipped = _stepsSkipped + 1;
-			}
-			if (nodeStats.cores < 16) {
-				await updateCore(ns, i, upgradeThreshold, nodeStats.cores);
-			} else {
-				_stepsSkipped = _stepsSkipped + 1;
-			}	
-			stepsSkipped = _stepsSkipped;		
+			// ns.print(nodeStats);
+			await ns.sleep(500);
+			var levelUpdateable = await updateLevel(ns, i, costThreshold, nodeStats.level);
+			await ns.sleep(500);
+			var ramUpdateable = await updateRam(ns, i, costThreshold, nodeStats.ram);
+			await ns.sleep(500);
+			var coreUpdateable = await updateCore(ns, i, costThreshold, nodeStats.cores);
+			await ns.sleep(500);
+			
+			upgradesAvailable = (nodeUpdateable || levelUpdateable || ramUpdateable || coreUpdateable);
 		}
-		upgradeThreshold = upgradeThreshold * 1.25;
+		costThreshold = costThreshold * costThresholdRate;
 	}
 }
 
-/** todo */
-async function updateLevel(ns, node, upgradeThreshold, level) {
-	var canUpgrade = true;
-	while(canUpgrade) {
-		var upgradeCost = await ns.hacknet.getLevelUpgradeCost(node, 1);
-		// ns.tprint(upgradeCost + " " + upgradeThreshold + " " + (upgradeThreshold > upgradeCost));
-		if (upgradeThreshold > upgradeCost) {
-			var currentCash = await ns.getServerMoneyAvailable("home");
-			// ns.tprint(upgradeCost + " " + currentCash + " " + (upgradeCost > currentCash));
-			while(upgradeCost > currentCash) {
-				await ns.sleep(5000);
-				currentCash = await ns.getServerMoneyAvailable("home");				
-			}
-			await ns.hacknet.upgradeLevel(node, 1);
-			level = level + 1;
-			canUpgrade = (level < 200)
-		} else {
-			canUpgrade = false;
-		}
-	}
+async function updateLevel(ns, node, costThreshold, count) {
+	return await updateCheck(ns, ns.hacknet.getLevelUpgradeCost, ns.hacknet.upgradeLevel, 
+							 node, costThreshold, count, 200); 
+}
+
+async function updateRam(ns, node, costThreshold, count) {
+	return await updateCheck(ns, ns.hacknet.getRamUpgradeCost, ns.hacknet.upgradeRam, 
+							 node, costThreshold, count, 64); 
+}
+
+async function updateCore(ns, node, costThreshold, count) {
+	return await updateCheck(ns, ns.hacknet.getCoreUpgradeCost, ns.hacknet.upgradeCore, 
+							 node, costThreshold, count, 16); 
+}
+
+async function updateCheck(ns, fCost, fUpgrade, node, costThreshold, count, maxCount) {
+	var canUpdate = (count < maxCount);
+	if (canUpdate) {
+		await update(ns, fCost, fUpgrade, node, costThreshold, count, maxCount);
+	} 
+	await ns.sleep(500);
+	return canUpdate;
 }
 
 /** todo */
-async function updateRAM(ns, node, upgradeThreshold, level) {
-	var canUpgrade = true;
-	while(canUpgrade) {
-		var upgradeCost = await ns.hacknet.getRamUpgradeCost(node, 1);
-		// ns.tprint(upgradeCost + " " + upgradeThreshold + " " + (upgradeThreshold > upgradeCost));
-		if (upgradeThreshold > upgradeCost) {
-			var currentCash = await ns.getServerMoneyAvailable("home");
-			// ns.tprint(upgradeCost + " " + currentCash + " " + (upgradeCost > currentCash));
-			while(upgradeCost > currentCash) {
+async function update(ns, fCost, fUpgrade, node, costThreshold, count, maxCount) {
+	// returned "at max" check
+	var canUpgrade = (count < maxCount);
+	// internal can update against costThreshold check
+	var _canUpgrade = canUpgrade;
+	while(_canUpgrade) {
+		var cost = await fCost(node, 1);
+		await ns.sleep(500);
+		if (costThreshold > cost) {
+			ns.print('updating: ' + node);
+			var moneyAvailable = await ns.getServerMoneyAvailable('home');
+			await ns.sleep(500);
+			while(cost > moneyAvailable) {
 				await ns.sleep(5000);
-				currentCash = await ns.getServerMoneyAvailable("home");
+				moneyAvailable = await ns.getServerMoneyAvailable('home');	
+				await ns.sleep(500);			
 			}
-			await ns.hacknet.upgradeRam(node, 1);
-			level = level + 1;
-			canUpgrade = (level < 64);
+			await fUpgrade(node, 1);
+			count = count++;
+			_canUpgrade = (count < maxCount)
 		} else {
-			canUpgrade = false;
+			_canUpgrade = false;
 		}
 	}
+	return canUpgrade;
 }
 
 /** todo */
-async function updateCore(ns, node, upgradeThreshold, level) {
+async function addNode(ns, costThreshold, count, maxCount) {
 	var canUpgrade = true;
 	while(canUpgrade) {
-		var upgradeCost = await ns.hacknet.getCoreUpgradeCost(node, 1);
-		// ns.tprint(upgradeCost + " " + upgradeThreshold + " " + (upgradeThreshold > upgradeCost));
-		if (upgradeThreshold > upgradeCost) {
-			var currentCash = await ns.getServerMoneyAvailable("home");
-			// ns.tprint(upgradeCost + " " + currentCash + " " + (upgradeCost > currentCash));
-			while(upgradeCost > currentCash) {
+		var cost = await ns.hacknet.getPurchaseNodeCost();
+		await ns.sleep(500);
+		if (costThreshold > cost) {
+			ns.print('adding new node');
+			var moneyAvailable = await ns.getServerMoneyAvailable('home');
+			await ns.sleep(500);
+			while(cost > moneyAvailable) {
 				await ns.sleep(5000);
-				currentCash = await ns.getServerMoneyAvailable("home");
-			}
-			await ns.hacknet.upgradeRam(node, 1);
-			level = level + 1;
-			canUpgrade = (level < 16);
-		} else {
-			canUpgrade = false;
-		}
-	}
-}
-/** todo */
-async function updateNode(ns, upgradeThreshold, level) {
-	var canUpgrade = true;
-	while(canUpgrade) {
-		var upgradeCost = await ns.hacknet.getPurchaseNodeCost();
-		// ns.tprint(upgradeCost + " " + upgradeThreshold + " " + (upgradeThreshold > upgradeCost));
-		if ((upgradeThreshold * 10)> upgradeCost) {
-			var currentCash = await ns.getServerMoneyAvailable("home");
-			// ns.tprint(upgradeCost + " " + currentCash + " " + (upgradeCost > currentCash));
-			while(upgradeCost > currentCash) {
-				await ns.sleep(5000);
-				currentCash = await ns.getServerMoneyAvailable("home");
+				moneyAvailable = await ns.getServerMoneyAvailable('home');	
+				await ns.sleep(500);			
 			}
 			await ns.hacknet.purchaseNode();
-			level = level + 1;
-			canUpgrade = (level < 24);
+			canUpgrade = (count++ < maxCount)
 		} else {
 			canUpgrade = false;
 		}
 	}
+	return true;
 }

@@ -1,26 +1,21 @@
 /** @param {NS} ns **/
 export async function main(ns) {
 	// parse args
-	const hostServer = ns.args[0] ?? "home";	
+	const hostServer = ns.args[0] ?? 'home';	
 	// get connected servers
 	const targetServers = await ns.scan(hostServer);
 	ns.tprint(targetServers);
-	// push scripts
-	for (var i = 0; i < targetServers.length; i++) {
-		var targetServer = targetServers[i];
+	// restart all servers
+	for (const targetServer of targetServers) {
 		await prepServer(ns, targetServer);
+		var weakenRam = ns.getScriptRam('weaken-server.js');
+		var hackRam = ns.getScriptRam('hack-server.js');
 		var availableRam = await getAvailableRam(ns, targetServer);
-		var growRam = ns.getScriptRam("grow-server.js");	
-		var weakenRam = ns.getScriptRam("weaken-server.js");
-		var hackRam = ns.getScriptRam("hack-server.js");
-		if (availableRam > (growRam + weakenRam + hackRam)) {
-			var threads = getThreadcount(availableRam, growRam, weakenRam, hackRam);
-			ns.tprint(targetServer + " " + threads[0] + " " + threads[1] + " " + threads[2]);
-			await startScript(ns, "grow-server.js", targetServer, threads[0]);
-			await startScript(ns, "weaken-server.js", targetServer, threads[1]);
-			await startScript(ns, "hack-server.js", targetServer, threads[2]);
+		if (availableRam >= (weakenRam + hackRam)) {
+			await startScript(ns, hostServer, targetServer, 'hack-server.js', .8);
+			await startScript(ns, hostServer, targetServer, 'weaken-server.js', 1);
 		} else {
-			ns.tprint("not enough ram to restart " + targetServer);
+			ns.tprint('not enough ram to restart ' + targetServer);
 		}
 	}
 }
@@ -28,10 +23,9 @@ export async function main(ns) {
 /** todo */
 async function prepServer(ns, server) {
 	// verify there is memory before starting script
-	await ns.run("clone-script.js", 1, server);
-	await ns.scriptKill("grow-server.js", server);
-	await ns.scriptKill("weaken-server.js", server);
-	await ns.scriptKill("hack-server.js", server);
+	await ns.scriptKill('hack-server.js', server);
+	await ns.scriptKill('weaken-server.js', server);
+	await ns.run('clone-script.js', 1, server);
 	await ns.sleep(1000);
 }
 
@@ -43,20 +37,7 @@ async function getAvailableRam(ns, server) {
 }
 
 /** todo */
-function getThreadcount(availableRam, growRam, weakenRam, hackRam) {
-
-	var [growWeight, weakenWeight, hackWeight] = [7*growRam, 2*weakenRam, 1*hackRam];
-	var baseWeight = growWeight + weakenWeight + hackWeight;
-	var baseRam = availableRam - growRam - weakenRam - hackRam;
-	var [growRatio, weakenRatio, hackRatio] = [growWeight/baseWeight, weakenWeight/baseWeight, hackWeight/baseWeight];
-	var growCount = 1 + parseInt(baseRam*growRatio/growRam);
-	var weakenCount = 1 + parseInt(baseRam*weakenRatio/weakenRam);
-	var hackCount = 1 + parseInt(baseRam*hackRatio/hackRam);
-
-	return [growCount, weakenCount, hackCount];
-}
-
-/** todo */
-function startScript(ns, script, targetServer, threads) {
-	ns.exec(script, targetServer, threads, targetServer);
+async function startScript(ns, server, targetServer, script, systemUsage) {
+	await ns.exec('run-script.js', server, 1, targetServer, script, systemUsage, targetServer);
+	await ns.sleep(1000);
 }

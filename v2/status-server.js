@@ -1,14 +1,13 @@
 /** @param {NS} ns **/
 export async function main(ns) {
 	// parse args
-	const hostServer = ns.args[0] ?? 'home';
-	// disable logs
-	ns.disableLog('ALL');	
+	const hostServer = ns.args[0] ?? "home";	
 	// get connected servers
 	const targetServers = await ns.scan(hostServer);
-	
+	log(ns, targetServers);
 	while(true) {
-		for (const targetServer of targetServers) {
+		for (var i = 0; i < targetServers.length; i++) {
+			var targetServer = targetServers[i];
 			await getGrowThreshold(ns, targetServer);
 			await ns.sleep(2000);
 			await getWeakenThreshold(ns, targetServer);
@@ -20,23 +19,26 @@ export async function main(ns) {
 /** todo */
 async function getGrowThreshold(ns, server) {
 	var maxMoney = await ns.getServerMaxMoney(server);
-	ns.print(server + ' - moneyMax:           ' + maxMoney.toFixed(2));
+	log(ns, server + " - maxMoney: " + maxMoney);
 	var moneyAvailable = await ns.getServerMoneyAvailable(server);
-	ns.print(server + ' - moneyAvailable:     ' + moneyAvailable.toFixed(2));
+	log(ns, server + " - moneyAvailable: " + moneyAvailable);
 	var growThreshold = (moneyAvailable / maxMoney).toFixed(2);
-	ns.print(server + ' - moneyThreshold:     ' + growThreshold*100 + '%');
-	ns.print('- - - - - - - - - - - - - - - - - - - - - - - - - -');
+	log(ns, server + " - growThreshold: " + growThreshold + "%");
 	return growThreshold;
 }
 
 /** todo */
 async function getWeakenThreshold(ns, server) {
 	var minSecurityLevel = await ns.getServerMinSecurityLevel(server);
-	ns.print(server + ' - securityMin:        ' + minSecurityLevel.toFixed(2));
+	log(ns, server + " - minSecurityLevel: " + minSecurityLevel);
 	var securityLevel = await ns.getServerSecurityLevel(server);
-	ns.print(server + ' - security:           ' + securityLevel.toFixed(2));
+	log(ns, server + " - securityLevel: " + securityLevel);
 	var weakenThreshold = (minSecurityLevel / securityLevel).toFixed(2);
-	ns.print(server + ' - securityThreshold:  ' + weakenThreshold*100 + '%');
-	ns.print('- - - - - - - - - - - - - - - - - - - - - - - - - -');
+	log(ns, server + " - weakenThreshold: " + weakenThreshold + "%");
 	return weakenThreshold;
+}
+
+function log(ns, toLog) {
+	// ns.tprint(toLog);
+	console.log(toLog);
 }
