@@ -9,10 +9,10 @@ export async function main(ns) {
 	for (const targetServer of targetServers) {
 		await prepServer(ns, targetServer);
 		var weakenRam = ns.getScriptRam('weaken-server.js');
-		var hackRam = ns.getScriptRam('hack-server.js');
+		var hackRam = ns.getScriptRam('weednfeed.js');
 		var availableRam = await getAvailableRam(ns, targetServer);
 		if (availableRam >= (weakenRam + hackRam)) {
-			await startScript(ns, hostServer, targetServer, 'hack-server.js', .8);
+			await startScript(ns, hostServer, targetServer, 'weednfeed.js', .8);
 			await startScript(ns, hostServer, targetServer, 'weaken-server.js', 1);
 		} else {
 			ns.tprint('not enough ram to restart ' + targetServer);
@@ -23,9 +23,9 @@ export async function main(ns) {
 /** todo */
 async function prepServer(ns, server) {
 	// verify there is memory before starting script
-	await ns.scriptKill('hack-server.js', server);
+	await ns.scriptKill('weednfeed.js', server);
 	await ns.scriptKill('weaken-server.js', server);
-	await ns.run('clone-script.js', 1, server);
+	await ns.run('clone-scripts.js', 1, server);
 	await ns.sleep(1000);
 }
 

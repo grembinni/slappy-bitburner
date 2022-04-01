@@ -1,7 +1,7 @@
 /** @param {NS} ns **/
 export async function main(ns) {
 	// parse args	
-	var costThreshold = ns.args[0] ?? 100000;
+	var costThreshold = ns.args[0] ?? 1000;
 	var costThresholdRate = ns.args[1] ?? 1.33;
 	// disable noise
 	ns.disableLog('ALL');	
