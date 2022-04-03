@@ -168,12 +168,12 @@ export async function calculateAvailableRam(ns, server) {
  * Calculate RAM available for each instance running on the server.
  */
 export async function calculateRamPerInstance(ns, server, numOfInstances, percentOfResources) {
-	var numOfInstances = numOfInstances ?? 20;
+	var numOfInstances = numOfInstances ?? 1;
 	var percentOfResources = percentOfResources ?? .9;
 	var availableRam = await calculateAvailableRam(ns, server);
 	availableRam = (availableRam * percentOfResources).toFixed(3);
 	ns.print('server: ' + server + ' availableRam: ' + availableRam + ' percentOfResources: ' + percentOfResources);
-	ns.print('server: ' + server + ' numOfInstances: ' + numOfInstances + ' ramPerInstance: ' + (availableRam / numOfInstances).toFixed(3));
+	// ns.print('server: ' + server + ' numOfInstances: ' + numOfInstances + ' ramPerInstance: ' + (availableRam / numOfInstances).toFixed(3));
 	return (availableRam / numOfInstances).toFixed(3);
 }
 
@@ -182,14 +182,14 @@ export async function calculateRamPerInstance(ns, server, numOfInstances, percen
  */
 export async function calculateThreadsPerInstance(ns, server, script, numOfInstances, percentOfResources) {
 	ns.print('server: ' + server + ' script: ' + script + ' numOfInstances: ' + numOfInstances + ' percentOfResources: ' + percentOfResources);
-	var numOfInstances = numOfInstances ?? 20;
+	var numOfInstances = numOfInstances ?? 1;
 	var percentOfResources = percentOfResources ?? .9;
 	var availableRAM = await calculateRamPerInstance(ns, server, numOfInstances, percentOfResources);
 	var scriptRam = await ns.getScriptRam(script);
 	ns.print('server: ' + server + 'availableRAM: ' + availableRAM + ' threadsPerInstance: ' + parseInt(availableRAM / scriptRam));
 	if (availableRAM < scriptRam) {
 		ns.print('server: ' + server + ' not enough ram to run ' + script);
-		ns.tprint('server: ' + server + ' not enough ram to run ' + script);
+		// ns.tprint('server: ' + server + ' not enough ram to run ' + script);
 		return 0;
 	}
 	return parseInt(availableRAM / scriptRam);
@@ -207,7 +207,7 @@ export async function execThreaded(ns, server, script, threads, _args) {
 		await ns.sleep(50);
 	} else {
 		ns.print('server: ' + server + ' not enough threads to run ' + script);
-		ns.tprint('server: ' + server + ' not enough threads to run ' + script);
+		//ns.tprint('server: ' + server + ' not enough threads to run ' + script);
 	}
 }
 
@@ -224,7 +224,7 @@ export async function runThreaded(ns, server, script, threads, _args) {
 		await ns.sleep(50);
 	} else {
 		ns.print('server: ' + server + ' not enough threads to run ' + script);
-		ns.tprint('server: ' + server + ' not enough threads to run ' + script);
+		//ns.tprint('server: ' + server + ' not enough threads to run ' + script);
 	}
 	return pid;
 }

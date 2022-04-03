@@ -12,7 +12,7 @@ export async function main(ns) {
 	await ns.sleep(500);
 	// 'iron-gym'
 	// 'microdyne'
-	await runSingle(ns, 'run-monitor-prototype.js', ['microdyne']);
+	await runSingle(ns, 'run-monitor-prototype.js', ['iron-gym']);
 }
 
 /** attack all servers */
@@ -38,7 +38,7 @@ async function prepServerForWarmup(ns, server) {
 	var script = 'run-hack-seq.js';
 	if (maxMoney > 0) {
  		await killAllScripts(ns, server);
-		var threads = await calculateThreadsPerInstance(ns, server, script, 1);
+		var threads = await calculateThreadsPerInstance(ns, server, script);
  		await execThreaded(ns, server, script, threads, [server]);
 		ns.print('server: ' + server + ' run ' + script);
 	} else {
