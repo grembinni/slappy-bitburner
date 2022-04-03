@@ -1,51 +1,50 @@
-/** attack all servers */
-export async function attackProvidedServers(ns, hostServer) {
-	await attackServers(ns, servers);
-}
-
-/** attack provided servers */
+/** 
+ * Attacks all servers with available software.
+ * Returns an array of all servers that were successfully hacked.
+ */
 export async function attackServers(ns, servers) {	
-	ns.tprint(servers);
+	ns.print(servers);
 	var skipped = 0;
+	var attackedServers = [];
 	// attack all
 	for (const server of servers) {
 		var success = await attackServer(ns, server);
-		if (!success) {
-			skipped++;
+		if (success) {
+			attackedServers.push(server); // push to attacked array
+		} else {
+			skipped++; // count for logging
 		}
 	}
+	ns.print('servers attacked: ' + servers.length);
 	ns.tprint('servers attacked: ' + servers.length);
+	ns.print('servers skipped: ' + skipped);
 	ns.tprint('servers skipped: ' + skipped);
+	return attackedServers;
 }
 
-/** attack a single server */
+/** 
+ * Attacks server with available software.
+ * Returns a boolean indicating if the server was successfully hacked.
+ */
 export async function attackServer(ns, server) {	
-	ns.tprint('attacking -> ' + server);
+	// ns.tprint('attacking -> ' + server);
 	// open ports
 	await openPorts(ns, server);
 	// nuke server
 	try {
 		await ns.nuke(server);
-		ns.tprint('nuked -> ' + server);
+		ns.print('server: ' + server + ' NUKED! ');
 		return true;
 	} catch(e) {
-		ns.tprint('skipped -> ' + server);
+		ns.print('server: ' + server + ' ## skipped ##');
+		ns.tprint('server: ' + server + ' ## skipped ##');
 		return false;
 	}
 }
 
-/** calculate thread count */
-async function calculateThreadCount(ns, server, script, systemUsage) {
-	
-	//ns.tprint(' server ' + server + ' script ' + script + ' systemUsage ' + systemUsage);
-	var serverMaxRam = await ns.getServerMaxRam(server);
-	var serverUsedRam = await ns.getServerUsedRam(server);
-	var scriptRam = await ns.getScriptRam(script);
-	//ns.tprint(' serverMaxRam ' + serverMaxRam + ' serverUsedRam ' + serverUsedRam + ' scriptRam ' + scriptRam);	
-	return parseInt(((serverMaxRam - serverUsedRam) * systemUsage) / scriptRam);
-}
-
-/** check that there are enough funds to hack */
+/** 
+ * Check that hacking level is effective against the server. 
+ */
 export async function canHack(ns, server) {	
 	var requiredLevel = await ns.getServerRequiredHackingLevel(server);
 	var currentLevel = await ns.getHackingLevel();
@@ -54,7 +53,9 @@ export async function canHack(ns, server) {
 	return (currentLevel > requiredLevel);
 }
 
-/** check that security is low enough to hack */
+/** 
+ * Check that security is low enough to hack effectively. 
+ */
 export async function canWeaken(ns, threshold, server) {	
 	// pull security settings
 	const currentLevel = await ns.getServerSecurityLevel(server);
@@ -67,54 +68,23 @@ export async function canWeaken(ns, threshold, server) {
 	return (targetThreshold <= currentLevel);
 }
 
-/** copy scripts to target server */
-export async function copyFiles(ns, scripts, server) {
+/** 
+ * Copy all files for the provided file type to the target server. 
+ */
+export async function copyAllFiles(ns, hostServer, targetServer, fileType) {	
 	// parse args
-	var scripts = scripts ?? [];
-	var server = server ?? 'n00dles';
-	// copy scripts
-	await ns.scp(scripts, server);
-}
-
-/** copy scripts to target server */
-export async function copyAllFiles(ns, targetServer, sourceServer, sourceDir, fileType) {	
-	// parse args
-	var sourceServer = sourceServer ?? 'home';
-	var sourceDir = sourceDir ?? '';
 	var fileType = fileType ?? '.js';
 	// parse arguments
-	var files = await ns.ls(sourceServer, fileType);
-	files = filterFiles(ns, files, sourceDir);
+	var files = await ns.ls(hostServer, fileType);
+	files = files.filter(file => !file.includes('/'));
 	// copy scripts
+	ns.print('server: ' + hostServer + ' targetServer: ' + targetServer + ' files: ' + files);
 	await ns.scp(files, targetServer);
 }
 
-/** calculate available memory to script **/
-export async function execThreadedAutoCalculated(ns, server, script, systemUsage, _args) {
-	// parse arguments
-	var args = _args ?? [];
-	// calculate thread count
-	var threads = await calculateThreadCount(ns, server, script, systemUsage);
-	// run script
-	if (threads && threads > 0) {
-		await ns.exec(script, server, threads, ...args);
-		await ns.sleep(50);
-	} else {
-		ns.tprint('not enough ram on ' + server + ' to run ' + script);
-	}
-}
-
-/** filter out files in folders */
-function filterFiles(ns, files, sourceDir) {
-	if (sourceDir === '') {
-		files = files.filter(file => !file.includes('/'));
-	} else {
-		files = files.filter(file => file.includes(sourceDir));
-	}
-	return files;
-}
-
-/** check that there are enough funds to hack */
+/** 
+ * Check that there are enough funds to hack. 
+ */
 export async function hasFunds(ns, threshold, server) {
 	const maxMoney = await ns.getServerMaxMoney(server);
 	const moneyAvailable = await ns.getServerMoneyAvailable(server);
@@ -125,17 +95,23 @@ export async function hasFunds(ns, threshold, server) {
 	return (threshold < fundThreshold);
 }
 
-/** filter of servers not to hack */
+/** 
+ * Filter of servers not to hack. 
+ */
 export function isAttackable(server) {
 	return server != ('home');
 }
 
-/** kill all scripts on target server */
+/** 
+ * Kill all scripts on target server.
+ */
 export async function killAllScripts(ns, server) {
 	await ns.killall(server);
 }
 
-/** get port count and try all available attacks */
+/** 
+ * Get port count and try all available attacks exe's.
+ */
 export async function openPorts(ns, server) {	
 	var numPortsRequired = await ns.getServerNumPortsRequired(server);
 	for(var i = 0; i < numPortsRequired; i++) {
@@ -157,36 +133,98 @@ export async function openPorts(ns, server) {
 	}
 }
 
-/** run script on single thread **/
-export async function runSingle(ns, script, _args) {
+/** 
+ * Run script on single thread 
+ */
+export async function runSingle(ns, script, args) {
 	// parse arguments
-	var args = _args ?? [];
+	var args = args ?? [];
 	// run script
 	await ns.run(script, 1, ...args);
 }
 
-/** calculate available memory to script **/
-export async function runThreadedAutoCalculated(ns, server, script, systemUsage, _args) {
-	// parse arguments
-	var args = _args ?? [];
-	// calculate thread count
-	var threads = await calculateThreadCount(ns, server, script, systemUsage);
-	// run script
-	var pid = 0;
-	if (threads && threads > 0) {
-		pid = await ns.run(script, threads, ...args);
-		await ns.sleep(50);
-	} else {
-		ns.tprint('not enough ram on ' + server + ' to run ' + script);
-	}
-	return pid;
-}
-
-/** validate arg size to set script var */
+/** 
+ * Split array at index or return empty array. 
+ */
 export function splice(argsToSplit, splitIndex) {
 	var args = [];	
 	if (argsToSplit && argsToSplit.length > splitIndex) {
 		args = argsToSplit.slice(splitIndex, argsToSplit.length);
 	}
 	return args;
+}
+
+/**
+ * Get available RAM for server.
+ */
+export async function calculateAvailableRam(ns, server) {	
+	var serverMaxRam = await ns.getServerMaxRam(server);
+	var serverUsedRam = await ns.getServerUsedRam(server);
+	ns.print('server: ' + server + ', available RAM: ' + (serverMaxRam - serverUsedRam));
+	return (serverMaxRam - serverUsedRam);
+}
+
+/** 
+ * Calculate RAM available for each instance running on the server.
+ */
+export async function calculateRamPerInstance(ns, server, numOfInstances, percentOfResources) {
+	var numOfInstances = numOfInstances ?? 20;
+	var percentOfResources = percentOfResources ?? .9;
+	var availableRam = await calculateAvailableRam(ns, server);
+	availableRam = (availableRam * percentOfResources).toFixed(3);
+	ns.print('server: ' + server + ' availableRam: ' + availableRam + ' percentOfResources: ' + percentOfResources);
+	ns.print('server: ' + server + ' numOfInstances: ' + numOfInstances + ' ramPerInstance: ' + (availableRam / numOfInstances).toFixed(3));
+	return (availableRam / numOfInstances).toFixed(3);
+}
+
+/** 
+ * Calculate thread count for each instance running on the server.
+ */
+export async function calculateThreadsPerInstance(ns, server, script, numOfInstances, percentOfResources) {
+	ns.print('server: ' + server + ' script: ' + script + ' numOfInstances: ' + numOfInstances + ' percentOfResources: ' + percentOfResources);
+	var numOfInstances = numOfInstances ?? 20;
+	var percentOfResources = percentOfResources ?? .9;
+	var availableRAM = await calculateRamPerInstance(ns, server, numOfInstances, percentOfResources);
+	var scriptRam = await ns.getScriptRam(script);
+	ns.print('server: ' + server + 'availableRAM: ' + availableRAM + ' threadsPerInstance: ' + parseInt(availableRAM / scriptRam));
+	if (availableRAM < scriptRam) {
+		ns.print('server: ' + server + ' not enough ram to run ' + script);
+		ns.tprint('server: ' + server + ' not enough ram to run ' + script);
+		return 0;
+	}
+	return parseInt(availableRAM / scriptRam);
+}
+
+/** 
+ * Executed threaded script call on remote server.
+ */
+export async function execThreaded(ns, server, script, threads, _args) {
+	// parse arguments
+	var args = _args ?? [];
+	// run script
+	if (threads > 0) {
+		await ns.exec(script, server, threads, ...args);
+		await ns.sleep(50);
+	} else {
+		ns.print('server: ' + server + ' not enough threads to run ' + script);
+		ns.tprint('server: ' + server + ' not enough threads to run ' + script);
+	}
+}
+
+/** 
+ * Run threaded script call on current server.
+ */
+export async function runThreaded(ns, server, script, threads, _args) {
+	// parse arguments
+	var args = _args ?? [];
+	// run script
+	var pid = 0;
+	if (threads && threads > 0) {
+		pid = await ns.run(script, threads, ...args);
+		await ns.sleep(50);
+	} else {
+		ns.print('server: ' + server + ' not enough threads to run ' + script);
+		ns.tprint('server: ' + server + ' not enough threads to run ' + script);
+	}
+	return pid;
 }
