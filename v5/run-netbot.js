@@ -1,6 +1,4 @@
-/** 
- * Auto generates hacknet nodes base on available resources.
- */
+/** @param {NS} ns **/
 export async function main(ns) {
 	// parse args	
 	var costThreshold = ns.args[0] ?? 1000;
