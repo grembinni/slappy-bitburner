@@ -8,11 +8,12 @@ export async function main(ns) {
 	await ns.sleep(500);
 	await runSingle(ns, 'run-status-all.js');
 	await ns.sleep(500);
-	await runSingle(ns, 'run-netbot.js');
+	// await runSingle(ns, 'run-netbot.js');
 	await ns.sleep(500);
+	// 'foodnstuff'
 	// 'iron-gym'
 	// 'microdyne'
-	await runSingle(ns, 'run-monitor-prototype.js', ['iron-gym']);
+	await runSingle(ns, 'run-swarm.js');
 }
 
 /** attack all servers */

@@ -1,8 +1,13 @@
 import {calculateThreadsPerInstance, canWeaken, hasFunds, runThreaded} from 'bit-utils.js';
 
+/**
+ * target state smart monitor
+ * originally intended to dynamically manage scripts against thread based on server state
+ * being deprecated to a simpler script model that runs a single script powered to max performance
+ */
 export async function main(ns) {
 	// parse args
-	const targetServer = ns.args[0] ?? 'iron-gym';	
+	const targetServer = ns.args[0] ?? 'foodnstuff';	
 	ns.disableLog('sleep');	
 	await monitor(ns, 'home', targetServer);	
 }

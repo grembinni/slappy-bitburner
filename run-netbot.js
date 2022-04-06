@@ -13,7 +13,7 @@ export async function main(ns) {
 	while (upgradesAvailable) {
 		ns.print('current cost threshold: $' + costThreshold);
 		// create node
-		var nodeUpdateable = await addNode(ns, costThreshold, nodeCount, 27);
+		var nodeUpdateable = await addNode(ns, costThreshold, nodeCount, 18);
 		nodeCount = await ns.hacknet.numNodes();
 		ns.print('current node count: ' + nodeCount);
 		// upgrade nodes
