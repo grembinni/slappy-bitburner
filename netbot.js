@@ -5,7 +5,7 @@ export async function main(ns) {
 	// parse args	
 	var nodeTarget = ns.args[1] ?? 24;
 	var costThreshold = 1000;
-	var costThresholdRate = 1.33;
+	var costThresholdRate = 1.1;
 	// disable noise
 	ns.disableLog('ALL');	
 	// todo	
@@ -28,7 +28,7 @@ export async function main(ns) {
 		}
 		costThreshold = (costThreshold * costThresholdRate).toFixed(3);
 	}
-	await sleep(300000);
+	await sleep(30000);
 }
 
 async function updateLevel(ns, node, costThreshold, count) {

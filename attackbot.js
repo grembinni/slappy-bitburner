@@ -21,6 +21,6 @@ async function attackAllServers(ns) {
 		let nukedServers = await attackServers(ns, unNukedServers);
 		ns.print('servers successfully attacked: ' + nukedServers.length);
 		unNukedServers = filterArray(unNukedServers, nukedServers);
-		await ns.sleep(6000);
+		await ns.sleep(60000);
 	}
 }

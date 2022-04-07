@@ -224,18 +224,6 @@ export function isAttackable(server) {
 	return !server.startsWith('swarm') && (server != 'home');
 }
 
-/** todo */
-export async function waitForMoney(ns, cost) {
-	var moneyAvailable = await ns.getServerMoneyAvailable('home');
-	await ns.sleep(50);
-	while(cost > moneyAvailable) {
-		ns.tprint('waiting for: ' + cost);
-		await ns.sleep(5000);
-		moneyAvailable = await ns.getServerMoneyAvailable('home');	
-		await ns.sleep(50);			
-	}
-}
-
 /** 
  * Kill all scripts on target server.
  */
@@ -311,4 +299,14 @@ export async function runThreaded(ns, server, script, threads, _args) {
  */
 export function unionArray(first, second) {
 	return [...first, ...second];
+}
+
+/** todo */
+export async function waitForMoney(ns, cost) {
+	var moneyAvailable = await ns.getServerMoneyAvailable('home');
+	while(cost > moneyAvailable) {
+		ns.print('waiting for: ' + cost);
+		await ns.sleep(60000);
+		moneyAvailable = await ns.getServerMoneyAvailable('home');			
+	}
 }

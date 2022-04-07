@@ -6,7 +6,7 @@ import {attackServers, buildServerRefs, calcThreadsPerInst, compare, copyAllFile
  */
 export async function main(ns) {	
 	ns.disableLog('ALL');
-	var serverSize = ns.args[0] ?? 64;
+	var serverSize = ns.args[0] ?? 32;
 	await createSwarm(ns, serverSize);
 }
 

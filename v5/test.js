@@ -1,5 +1,5 @@
 import {scanServer} from 'cerebro.js';
-import {buildServerRefs} from 'bit-utils.js';
+import {buildServerRefs, filterArray} from 'bit-utils.js';
 
 export async function main(ns) {
 	ns.tprint(ns.getServerMaxRam('swarm-0'));
@@ -16,13 +16,19 @@ export async function main(ns) {
 	//_servers = _servers.filter(e => (!e.startsWith('swarm')));
 	let servers = await buildServerRefs(ns, _servers)
 	servers.sort((a, b) => sortByMaxMoney(ns, a, b));
+	let swarmServers = [];
 	for (const server of servers) {
-		if (server.serverName.startsWith('swarm')) {
+		if (server.serverName.startsWith('s') || server.serverName.startsWith('h')) {
 			ns.tprint(server.serverName + ':' + server.maxMoney);
 			ns.tprint(server.serverName + ':' + server.maxMoney);
+			swarmServers.push(server);
 		}
 	}
-
+	ns.tprint(servers.length);
+	ns.tprint(swarmServers.length);
+	var newServers = filterArray(servers, swarmServers);
+	ns.tprint(newServers.length);
+	
 }
 export function isAttackable(server) {
 	// return !(server === ('home')) || (server.startsWith('swarm'));
