@@ -1,8 +1,11 @@
-/** @param {NS} ns **/
+/** 
+ * Auto generates hacknet nodes base on available resources.
+ */
 export async function main(ns) {
 	// parse args	
-	var costThreshold = ns.args[0] ?? 1000;
-	var costThresholdRate = ns.args[1] ?? 1.33;
+	var nodeTarget = ns.args[1] ?? 24;
+	var costThreshold = 1000;
+	var costThresholdRate = 1.33;
 	// disable noise
 	ns.disableLog('ALL');	
 	// todo	
@@ -11,7 +14,7 @@ export async function main(ns) {
 	while (upgradesAvailable) {
 		ns.print('current cost threshold: $' + costThreshold);
 		// create node
-		var nodeUpdateable = await addNode(ns, costThreshold, nodeCount, 27);
+		var nodeUpdateable = await addNode(ns, costThreshold, nodeCount, nodeTarget);
 		nodeCount = await ns.hacknet.numNodes();
 		ns.print('current node count: ' + nodeCount);
 		// upgrade nodes
@@ -25,6 +28,7 @@ export async function main(ns) {
 		}
 		costThreshold = (costThreshold * costThresholdRate).toFixed(3);
 	}
+	await sleep(300000);
 }
 
 async function updateLevel(ns, node, costThreshold, count) {

@@ -1,5 +1,5 @@
 import {scanServer} from 'cerebro.js';
-import {attackServers, buildServerRefs, calcThreadsPerInst, compare, copyAllFiles, execThreaded, killAllScripts, waitForMoney} from 'bit-utils.js';
+import {attackServers, buildServerRefs, calculateThreadsPerInstance, compare, copyAllFiles, execThreaded, killAllScripts, waitForMoney} from 'bit-utils.js';
 
 /**
  * todo
@@ -31,10 +31,10 @@ async function createSwarm(ns, serverSize) {
 			if (i >= 25) { break; }
 		}
 
-		await ns.print('old server size: ' + serverSize);
-		serverSize = getServerSize(serverSize);
-		await ns.print('old server size: ' + serverSize);
-		if (serverSize > 500000) { break; }
+		await ns.tprint(serverSize);
+		serverSize = getServerSize(ns, serverSize);
+		await ns.tprint(serverSize);
+		if (serverSize > 5000) { break; }
 		await ns.sleep(3600000);
 	} 
 }
@@ -42,10 +42,22 @@ async function createSwarm(ns, serverSize) {
 /** todo */
 function getServerSize(serverSize) {
 	
-	if (serverSize <= 0 || serverSize >= 500000) {
+	if (serverSize > 128) {
+		serverSize = 128;
+	} else if (serverSize > 256) {
+		serverSize = 256;
+	} else if (serverSize > 512) {
+		serverSize = 512;
+	} else if (serverSize > 1024) {
+		serverSize = 1024;
+	} else if (serverSize > 2048) {
+		serverSize = 2048;
+	} else if (serverSize > 4096) {
+		serverSize = 4096;
+	} else {
 		serverSize = 99999999;
 	}
-	return serverSize = serverSize * 2;
+	return serverSize;
 }
 
 /** todo */
@@ -99,6 +111,6 @@ async function startServer(ns, server, targetServer) {
 	var script = 'run-hack-seq.js';
 	var systemUsage = .95;
 	await copyAllFiles(ns, 'home', server);
-	let threads = await calcThreadsPerInst(ns, server, script, 1, systemUsage);
+	let threads = await calculateThreadsPerInstance(ns, server, script, 1, systemUsage);
 	await execThreaded(ns, server, script, threads, [targetServer]);
 }

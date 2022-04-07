@@ -79,7 +79,7 @@ export function buildServerRef(ns, serverName, root, money, ram, hackLevel, secu
 /**
  * Get available RAM for server.
  */
-export async function calculateAvailableRam(ns, server) {	
+export async function calcAvailableRam(ns, server) {	
 	var serverMaxRam = await ns.getServerMaxRam(server);
 	var serverUsedRam = await ns.getServerUsedRam(server);
 	ns.print('server: ' + server + ', available RAM: ' + (serverMaxRam - serverUsedRam));
@@ -89,10 +89,10 @@ export async function calculateAvailableRam(ns, server) {
 /** 
  * Calculate RAM available for each instance running on the server.
  */
-export async function calculateRamPerInstance(ns, server, numOfInstances, percentOfResources) {
+export async function calcRamPerInst(ns, server, numOfInstances, percentOfResources) {
 	var numOfInstances = numOfInstances ?? 1;
 	var percentOfResources = percentOfResources ?? .9;
-	var availableRam = await calculateAvailableRam(ns, server);
+	var availableRam = await calcAvailableRam(ns, server);
 	availableRam = (availableRam * percentOfResources).toFixed(3);
 	ns.print('server: ' + server + ' availableRam: ' + availableRam + ' percentOfResources: ' + percentOfResources);
 	// ns.print('server: ' + server + ' numOfInstances: ' + numOfInstances + ' ramPerInstance: ' + (availableRam / numOfInstances).toFixed(3));
@@ -102,11 +102,11 @@ export async function calculateRamPerInstance(ns, server, numOfInstances, percen
 /** 
  * Calculate thread count for each instance running on the server.
  */
-export async function calculateThreadsPerInstance(ns, server, script, numOfInstances, percentOfResources) {
+export async function calcThreadsPerInst(ns, server, script, numOfInstances, percentOfResources) {
 	ns.print('server: ' + server + ' script: ' + script + ' numOfInstances: ' + numOfInstances + ' percentOfResources: ' + percentOfResources);
 	var numOfInstances = numOfInstances ?? 1;
 	var percentOfResources = percentOfResources ?? .9;
-	var availableRAM = await calculateRamPerInstance(ns, server, numOfInstances, percentOfResources);
+	var availableRAM = await calcRamPerInst(ns, server, numOfInstances, percentOfResources);
 	var scriptRam = await ns.getScriptRam(script);
 	ns.print('server: ' + server + 'availableRAM: ' + availableRAM + ' threadsPerInstance: ' + parseInt(availableRAM / scriptRam));
 	if (availableRAM < scriptRam) {

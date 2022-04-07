@@ -1,34 +1,39 @@
-import {attackAllServers} from 'attack-utils.js';
-import {copyAllFiles, killAll} from 'server-utils.js';
-import {runSingle, execThreaded} from 'thread-utils.js';
 import {scanServer} from 'cerebro.js';
+import {calculateThreadsPerInstance, copyAllFiles, execThreaded, killAllScripts, runSingle} from 'bit-utils.js';
 
 export async function main(ns) {
-	await attackAllServers(ns);
+	await runSingle(ns, 'run-status-all.js');
+	await ns.sleep(500);
+	await runSingle(ns, 'run-attack.js');
+	await ns.sleep(500);
+	await runSingle(ns, 'run-swarm.js');
+	await ns.sleep(500);
+	// await runSingle(ns, 'run-netbot.js', [9]);
 	await ns.sleep(500);
 	await warmupAllServers(ns);
-	await ns.sleep(500);
-	await runSingle(ns, 'run-status.js');
-	await ns.sleep(500);
-	await runSingle(ns, 'run-netbot.js');
-	await ns.sleep(500);
-	await runSingle(ns, 'run-simple-monitor.js', ['microdyne']);
 }
 
+/** start default self attack scripts on all open servers */
 async function warmupAllServers(ns) {
-	var servers = await scanServer(ns, 'home', []);
+	ns.print('warmupAllServers');
+	let servers = await scanServer(ns, 'home');
 	for (const server of servers) {
 		await prepServerForWarmup(ns, server);
 	}
 }
 
 async function prepServerForWarmup(ns, server) {
- 	await copyAllFiles(ns, server);
-	var maxMoney = await ns.getServerMaxMoney(server);
+	ns.print('server: ' + server + ' prepServerForWarmup');
+ 	await copyAllFiles(ns, 'home', server);
+	let maxMoney = await ns.getServerMaxMoney(server);
+	let script = 'run-hack-seq.js';
 	if (maxMoney > 0) {
- 		await killAll(ns, server);
- 		await execThreaded(ns, server, 'run-warmup.js', 1, [server]);
+ 		await killAllScripts(ns, server);
+		let threads = await calculateThreadsPerInstance(ns, server, script);
+ 		await execThreaded(ns, server, script, threads, [server]);
+		ns.print('server: ' + server + ' run ' + script);
 	} else {
-		ns.tprint('not enough money on ' + server + ' to run run-warmup.js');
+		ns.print('server: ' + server + ' not enough money on to run ' + script);
+		// ns.tprint('server: ' + server + ' not enough money on to run ' + script);
 	}
 }

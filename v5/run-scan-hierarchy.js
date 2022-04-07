@@ -2,23 +2,28 @@ import {filterArray, isAttackable, unionArray} from 'bit-utils.js';
 
 /**
  * Does full hierarchal scan of the whole network, starting from the provided parent.
- * Returns all known servers back as an array for processing.
+ * logs all known servers with thier parents/children for visibility.
  */
-export async function scanServer(ns, parent, knownServers) {
+export async function main(ns) {
+	await scanHierarchy(ns);
+}
+
+export async function scanHierarchy(ns, parent, parentRef, knownServers) {
 	parent = parent ?? 'home';
+	parentRef = parentRef ?? parent;
 	knownServers = knownServers ?? [];
+
 	// get directly connected servers
+	ns.tprint(parentRef);
 	var children = await ns.scan(parent);
 	var filteredChildren = filterArray(children, knownServers);
 	filteredChildren = filteredChildren.filter(e => (isAttackable(e)));
 	var updatedKnown = unionArray(filteredChildren, knownServers);
-	// get next tier of connected servers 
+	// get relatives of connected servers 
 	for (const _parent of filteredChildren) {
-		var _children = await scanServer(ns, _parent, updatedKnown);
+		var _parentRef = parentRef +'->'+ _parent;
+		var _children = await scanHierarchy(ns, _parent, _parentRef, updatedKnown);
 		var _filteredChildren = filterArray(_children, knownServers);
-		_filteredChildren = _filteredChildren.filter(e => (e != ('home')));
-		// filtering out '.' because scripts cant handle as an argment
-		_filteredChildren = _filteredChildren.filter(e => (e != ('.')));
 		_filteredChildren = _filteredChildren.filter(e => (isAttackable(e)));
 		var updatedKnown = unionArray(_filteredChildren, knownServers);
 	}
