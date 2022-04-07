@@ -1,5 +1,9 @@
+import {isAttackable} from 'bit-utils.js';
+
 /** todo */
 export async function main(ns) {
 	var server = ns.args[0] ?? 'n00dles';
-	await ns.hack(server);
+	if (isAttackable(server)) {
+		await ns.hack(server);
+	}
 }

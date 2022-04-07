@@ -16,9 +16,10 @@ export async function attackServers(ns, servers) {
 		}
 	}
 	ns.print('servers attacked: ' + servers.length);
-	ns.tprint('servers attacked: ' + servers.length);
+	// ns.tprint('servers attacked: ' + servers.length);
 	ns.print('servers skipped: ' + skipped);
-	ns.tprint('servers skipped: ' + skipped);
+	// ns.tprint('servers skipped: ' + skipped);
+
 	return attackedServers;
 }
 
@@ -37,7 +38,7 @@ export async function attackServer(ns, server) {
 		return true;
 	} catch(e) {
 		ns.print('server: ' + server + ' ## skipped ##');
-		ns.tprint('server: ' + server + ' ## skipped ##');
+		// ns.tprint('server: ' + server + ' ## skipped ##');
 		return false;
 	}
 }
@@ -50,11 +51,11 @@ export async function buildServerRefs(ns, servers) {
 	var serverRefs = [];
 	// attack all
 	for (const server of servers) {
-		let root = await ns.hasRootAccess(server);
-		let money = await ns.getServerMaxMoney(server);
-		let ram = await ns.getServerMaxRam(server);
-		let security = await ns.getServerMinSecurityLevel(server);
-		let hackLevel = await ns.getServerRequiredHackingLevel(server);
+		var root = await ns.hasRootAccess(server);
+		var money = await ns.getServerMaxMoney(server);
+		var ram = await ns.getServerMaxRam(server);
+		var security = await ns.getServerMinSecurityLevel(server);
+		var hackLevel = await ns.getServerRequiredHackingLevel(server);
 		serverRefs.push(buildServerRef(ns, server, root, money, ram, hackLevel, security));
 	}
 	return serverRefs;
@@ -142,14 +143,34 @@ export async function canWeaken(ns, threshold, server) {
 	return (targetThreshold <= currentLevel);
 }
 
+/** todo */
+export function compare(ns, a, b, asc) {
+	var asc = asc ?? true;
+	let sort = 0
+	if (asc) {
+		if (a < b) {
+			sort = 1;
+		} else if (a > b) {
+			sort = -1;
+		}
+	} else {
+		if (a > b) {
+			sort = 1;
+		} else if (a < b) {
+			sort = -1;
+		}
+	}
+	return sort;
+}
+
 /** 
  * Copy all files for the provided file type to the target server. 
  */
-export async function copyAllFiles(ns, hostServer, targetServer, fileType) {	
+export async function copyAllFiles(ns, hostServer, targetServer, fivarype) {	
 	// parse args
-	var fileType = fileType ?? '.js';
+	var fivarype = fivarype ?? '.js';
 	// parse arguments
-	var files = await ns.ls(hostServer, fileType);
+	var files = await ns.ls(hostServer, fivarype);
 	files = files.filter(file => !file.includes('/'));
 	// copy scripts
 	ns.print('server: ' + hostServer + ' targetServer: ' + targetServer + ' files: ' + files);
@@ -172,6 +193,17 @@ export async function execThreaded(ns, server, script, threads, _args) {
 	}
 }
 
+/**
+ * todo
+ */
+export function filterArray(toFilter, filterSet) {
+	var filtered = [];
+	if (toFilter) {
+		filtered = toFilter.filter(e => (filterSet.indexOf(e) === -1));
+	}	
+	return filtered;
+}
+
 /** 
  * Check that there are enough funds to hack. 
  */
@@ -189,7 +221,19 @@ export async function hasFunds(ns, threshold, server) {
  * Filter of servers not to hack. 
  */
 export function isAttackable(server) {
-	return server != ('home');
+	return !server.startsWith('swarm') && (server != 'home');
+}
+
+/** todo */
+export async function waitForMoney(ns, cost) {
+	var moneyAvailable = await ns.getServerMoneyAvailable('home');
+	await ns.sleep(50);
+	while(cost > moneyAvailable) {
+		ns.tprint('waiting for: ' + cost);
+		await ns.sleep(5000);
+		moneyAvailable = await ns.getServerMoneyAvailable('home');	
+		await ns.sleep(50);			
+	}
 }
 
 /** 
@@ -260,4 +304,11 @@ export async function runThreaded(ns, server, script, threads, _args) {
 		//ns.tprint('server: ' + server + ' not enough threads to run ' + script);
 	}
 	return pid;
+}
+
+/**
+ * todo
+ */
+export function unionArray(first, second) {
+	return [...first, ...second];
 }

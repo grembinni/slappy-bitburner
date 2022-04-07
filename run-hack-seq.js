@@ -5,31 +5,31 @@ import {canHack, canWeaken, hasFunds, isAttackable} from 'bit-utils.js';
  * This is a selfcontained attack that is useful for simple low mem/self attack configuration.
  */
 export async function main(ns) {	
-	var server = ns.args[0] ?? 'n00dles';
+	var server = ns.args[0];
 	var weakenThreshold = ns.args[1] ?? 1.1;
 	var hackThreshold = ns.args[2] ?? .8;
-	
-	await ns.sleep(1000);
-	await startHackSequence(ns, server, weakenThreshold, hackThreshold);
+
+	if (isAttackable(server)) {
+		await startHackSequence(ns, server, weakenThreshold, hackThreshold);
+	}
 }
 
 /** execute all 3 hack steps */
-export async function startHackSequence(ns, server, weakenThreshold, hackThreshold) {	
+async function startHackSequence(ns, server, weakenThreshold, hackThreshold) {	
 	// parse args
-	var server = server ?? 'n00dles';
+	var server = server;
 	var weakenThreshold = weakenThreshold ?? 1.1;
 	var hackThreshold = hackThreshold ?? .8;
 
 	// pause until hacking level is high enough
 	var hackable = await canHack(ns, server);
 	while (!hackable) {
-		await ns.sleep(3000);
+		await ns.sleep(60000);
 		hackable = await canHack(ns, server);
 	}
 
 	// weaken or hack or grow
-	var attackable = await isAttackable(server);
-	while (attackable) {
+	while (true) {
 		// monitor
 		var hasSecurity = await canWeaken(ns, weakenThreshold, server);
 		if (hasSecurity) {

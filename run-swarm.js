@@ -1,92 +1,116 @@
 import {scanServer} from 'cerebro.js';
-import {attackServers, buildServerRefs, calculateThreadsPerInstance, copyAllFiles, execThreaded, killAllScripts} from 'bit-utils.js';
+import {attackServers, buildServerRefs, calculateThreadsPerInstance, compare, copyAllFiles, execThreaded, killAllScripts, waitForMoney} from 'bit-utils.js';
 
 /**
  * todo
  */
-export async function main(ns) {
-	
-	let serverSize = ns.args[0] ?? 512;
-	let serverPrice = await ns.getPurchasedServerCost(serverSize);
-	//let processedServers = [];
-	
-	//while (true) {
-		// load all servers
-		let _servers = await scanServer(ns, 'home');		
-		await attackServers(ns, _servers);
-		let servers = await buildServerRefs(ns, _servers)
-		let processedServers = [];
-		let filteredServers = await filterServers(ns, servers, processedServers);
-		filteredServers.sort((a, b) => sortByMaxMoney(ns, a, b));
-		let i = 0;
+export async function main(ns) {	
+	ns.disableLog('ALL');
+	var serverSize = ns.args[0] ?? 64;
+	await createSwarm(ns, serverSize);
+}
+
+// 
+async function createSwarm(ns, serverSize) {
+	while (true) {
+		var serverPrice = await ns.getPurchasedServerCost(serverSize);
+		var filteredServers = await lookupServersToHack(ns);
+		var i = 0;
 		for (const filteredServer of filteredServers) {
 			// check if exists
-			let newServer = 'swarm-' + i++;
-			let exists = await ns.serverExists(newServer);
+			var newServer = 'swarm-' + i++;
+			var exists = await ns.serverExists(newServer);
 			if (exists) {
- 				await killAllScripts(ns, newServer);
-				let currentServerSize = ns.getServerMaxRam(newServer);
-				if (serverSize > currentServerSize) {
-					ns.deleteServer(newServer);
-					exists = false;
-				}
+				exists = await refreshServer(ns, newServer, serverSize);
 			}
 			if (!exists) {	
-				let funding = await isMoneyAvailable(ns, serverPrice);
-				while (!funding) {
-					await ns.sleep(5000);
-					funding = await isMoneyAvailable(ns, serverPrice);
-				}
-				// setup server	
-				await ns.purchaseServer(newServer, serverSize);	
-				await ns.sleep(5000);	
+				await createServer(ns, newServer, serverSize, serverPrice);	
 			}
-			await copyAllFiles(ns, 'home', newServer);
-			let threads = await calculateThreadsPerInstance(ns, newServer, 'run-hack-seq.js', 1, .95);
-			await execThreaded(ns, newServer, 'run-hack-seq.js', threads, [filteredServer.serverName]);
-			// add to processed
-			processedServers.push(newServer);
-			if (processedServers.length >= 25) {
-				break;
-			}
-		//}
+			await startServer(ns, newServer, filteredServer.serverName);
+			
+			if (i >= 25) { break; }
+		}
+
+		await ns.tprint(serverSize);
+		serverSize = getServerSize(ns, serverSize);
+		await ns.tprint(serverSize);
+		if (serverSize > 5000) { break; }
+		await ns.sleep(3600000);
 	} 
 }
 
 /** todo */
-async function filterServers(ns, servers, processedServers) {
+function getServerSize(serverSize) {
+	
+	if (serverSize > 128) {
+		serverSize = 128;
+	} else if (serverSize > 256) {
+		serverSize = 256;
+	} else if (serverSize > 512) {
+		serverSize = 512;
+	} else if (serverSize > 1024) {
+		serverSize = 1024;
+	} else if (serverSize > 2048) {
+		serverSize = 2048;
+	} else if (serverSize > 4096) {
+		serverSize = 4096;
+	} else {
+		serverSize = 99999999;
+	}
+	return serverSize;
+}
+
+/** todo */
+async function createServer(ns, server, serverSize, serverPrice) {
+	await waitForMoney(ns, serverPrice);
+	await ns.purchaseServer(server, serverSize);	
+	await ns.sleep(500);
+}
+
+/** todo */
+async function lookupServersToHack(ns) {
+	// lookup all servers
+	var servers = await scanServer(ns, 'home');
+	var serverRefs = await buildServerRefs(ns, servers);	
+	// attack the servers before run
+	await attackServers(ns, servers);
+	// filter and sort service to hack
+	var filteredServers = await filterServersToHack(ns, serverRefs);
+	filteredServers.sort((a, b) => compare(ns, a.maxMoney, b.maxMoney, false));
+
+	return filteredServers;
+}
+
+/** todo */
+async function filterServersToHack(ns, servers) {
 	var playerHackLevel = await ns.getHackingLevel();
-	ns.tprint(servers.length);
-	// for (const p of processedServers) {
-	// 	servers = servers.filter(e => (e.serverName != p.serverName));
-	// }
+	ns.print("# servers: " + servers.length);
 	servers = servers.filter(e => (e.maxMoney > 0));
-	ns.tprint(servers.length);
+	ns.print("# servers with money: " + servers.length);
 	servers = servers.filter(e => (e.rootAccess));
-	ns.tprint(servers.length);
-	servers = servers.filter(e => (e.requiredHackingLevel < playerHackLevel));
-	ns.tprint(servers.length);
+	ns.print("# servers with root access: " + servers.length);
+	servers = servers.filter(e => (e.requiredHackingLevel <= playerHackLevel));
+	ns.print("# servers able to hack: " + servers.length);
 	return servers;
 }
 
 /** todo */
-async function isMoneyAvailable(ns, cost) {
-	var moneyAvailable = await ns.getServerMoneyAvailable('home');
-	await ns.sleep(50);
-	while(cost > moneyAvailable) {
-		await ns.sleep(5000);
-		moneyAvailable = await ns.getServerMoneyAvailable('home');	
-		await ns.sleep(50);			
+async function refreshServer(ns, server, serverSize) {
+	await killAllScripts(ns, server);
+	var currentServerSize = ns.getServerMaxRam(server);
+	var exists = true;
+	if (serverSize > currentServerSize) {
+		await ns.deleteServer(server);
+		exists = false;
 	}
-	return true;
+	return exists;
 }
+
 /** todo */
-function sortByMaxMoney(ns, a, b) {
-	let sort = 0
-	if (a.maxMoney < b.maxMoney) {
-		sort = 1;
-	} else if (a.maxMoney > b.maxMoney) {
-		sort = -1;
-	}
-	return sort;
+async function startServer(ns, server, targetServer) {
+	var script = 'run-hack-seq.js';
+	var systemUsage = .95;
+	await copyAllFiles(ns, 'home', server);
+	let threads = await calculateThreadsPerInstance(ns, server, script, 1, systemUsage);
+	await execThreaded(ns, server, script, threads, [targetServer]);
 }
