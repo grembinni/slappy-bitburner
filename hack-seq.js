@@ -1,5 +1,5 @@
-import {canHack, canWeaken, hasFunds, isAttackable} from 'bit-utils.js';
-
+import {isAttackable} from 'attack-utils.js';
+import {canHack, canWeaken, hasFunds} from 'server-utils.js';
 /**
  * Script that executes all 3 hack steps in a single executable. 
  * This is a selfcontained attack that is useful for simple low mem/self attack configuration.

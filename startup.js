@@ -1,13 +1,13 @@
-import {runSingle} from 'bit-utils.js';
+import {runSingle} from 'script-utils.js';
 
 export async function main(ns) {
-	await runSingle(ns, 'statusbot.js');
+	await runSingle(ns, 'status-bot.js');
 	await ns.sleep(500);
-	await runSingle(ns, 'attackbot.js');
+	await runSingle(ns, 'attack-bot.js');
 	await ns.sleep(500);
-	await runSingle(ns, 'swarmbot.js');
+	await runSingle(ns, 'swarm-bot.js');
 	await ns.sleep(500);
-	await runSingle(ns, 'hack-self.js');
+	await runSingle(ns, 'sabotage-bot.js');
 	await ns.sleep(500);
-	await runSingle(ns, 'netbot.js');
+	await runSingle(ns, 'net-bot.js');
 }

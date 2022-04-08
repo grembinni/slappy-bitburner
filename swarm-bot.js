@@ -1,12 +1,14 @@
 import {scanServer} from 'cerebro.js';
-import {attackServers, buildServerRefs, calcThreadsPerInst, compare, copyAllFiles, execThreaded, killAllScripts, waitForMoney} from 'bit-utils.js';
+import {compare} from 'bit-utils.js';
+import {execThreaded, killAllScripts} from 'script-utils.js';
+import {buildServerRefs, calcThreadsPerInst, copyAllFiles, waitForMoney} from 'server-utils.js';
 
 /**
  * todo
  */
-export async function main(ns) {	
-	ns.disableLog('ALL');
-	var serverSize = ns.args[0] ?? 32;
+export async function main(ns) {
+	ns.disableLog('scp');	
+	var serverSize = ns.args[0] ?? 64;
 	await createSwarm(ns, serverSize);
 }
 
@@ -31,18 +33,18 @@ async function createSwarm(ns, serverSize) {
 			if (i >= 25) { break; }
 		}
 
-		await ns.print('old server size: ' + serverSize);
+		ns.print('old server size: ' + serverSize.toString());
 		serverSize = getServerSize(serverSize);
-		await ns.print('old server size: ' + serverSize);
-		if (serverSize > 500000) { break; }
-		await ns.sleep(3600000);
+		ns.print('new server size: ' + serverSize.toString());
+		if (serverSize > 1048576) { break; }
+		await ns.sleep(serverSize * 500);
 	} 
 }
 
 /** todo */
 function getServerSize(serverSize) {
 	
-	if (serverSize <= 0 || serverSize >= 500000) {
+	if (serverSize <= 0 || serverSize >= 1048576) {
 		serverSize = 99999999;
 	}
 	return serverSize = serverSize * 2;
@@ -60,11 +62,9 @@ async function lookupServersToHack(ns) {
 	// lookup all servers
 	var servers = await scanServer(ns, 'home');
 	var serverRefs = await buildServerRefs(ns, servers);	
-	// attack the servers before run
-	await attackServers(ns, servers);
 	// filter and sort service to hack
 	var filteredServers = await filterServersToHack(ns, serverRefs);
-	filteredServers.sort((a, b) => compare(ns, a.maxMoney, b.maxMoney, false));
+	filteredServers.sort((a, b) => compare(ns, a.maxMoney, b.maxMoney, (filteredServers.length >= 25)));
 
 	return filteredServers;
 }
@@ -85,7 +85,7 @@ async function filterServersToHack(ns, servers) {
 /** todo */
 async function refreshServer(ns, server, serverSize) {
 	await killAllScripts(ns, server);
-	var currentServerSize = ns.getServerMaxRam(server);
+	var currentServerSize = await ns.getServerMaxRam(server);
 	var exists = true;
 	if (serverSize > currentServerSize) {
 		await ns.deleteServer(server);
@@ -96,7 +96,7 @@ async function refreshServer(ns, server, serverSize) {
 
 /** todo */
 async function startServer(ns, server, targetServer) {
-	var script = 'run-hack-seq.js';
+	var script = 'hack-seq.js';
 	var systemUsage = .95;
 	await copyAllFiles(ns, 'home', server);
 	let threads = await calcThreadsPerInst(ns, server, script, 1, systemUsage);

@@ -1,4 +1,5 @@
-import {calculateThreadsPerInstance, canWeaken, hasFunds, runThreaded} from 'bit-utils.js';
+import {runThreaded} from 'script-utils.js';
+import {calcThreadsPerInst, canWeaken, hasFunds} from 'server-utils.js';
 
 /**
  * target state smart monitor
@@ -95,9 +96,9 @@ async function buildScriptsRef(ns, hostServer, targetServer) {
 	const growScript = 'grow-basic.js';
 	const hackScript = 'hack-basic.js';
 	const weakScript = 'weak-basic.js';
-	const growThreads = await calculateThreadsPerInstance(ns, hostServer, growScript, instanceCount, systemResourcePercentage);
-	const hackThreads = await calculateThreadsPerInstance(ns, hostServer, hackScript, instanceCount, systemResourcePercentage);
-	const weakThreads = await calculateThreadsPerInstance(ns, hostServer, weakScript, instanceCount, systemResourcePercentage);	
+	const growThreads = await calcThreadsPerInst(ns, hostServer, growScript, instanceCount, systemResourcePercentage);
+	const hackThreads = await calcThreadsPerInst(ns, hostServer, hackScript, instanceCount, systemResourcePercentage);
+	const weakThreads = await calcThreadsPerInst(ns, hostServer, weakScript, instanceCount, systemResourcePercentage);	
 	const scriptsRef = {
 		"hostServer": hostServer,
 		"targetServer": targetServer,

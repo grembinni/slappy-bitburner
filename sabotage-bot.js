@@ -1,7 +1,11 @@
-import {scanServer} from 'cerebro.js';
-import {buildServerRefs, calcThreadsPerInst, copyAllFiles, execThreaded, filterArray, isAttackable, killAllScripts} from 'bit-utils.js';
+import { scanServer } from 'cerebro.js';
+import {isAttackable} from 'attack-utils.js';
+import {execThreaded, killAllScripts} from 'script-utils.js';
+import {buildServerRefs, copyAllFiles, calcThreadsPerInst} from 'server-utils.js';
 
 export async function main(ns) {
+	
+	ns.disableLog('scp');	
 	await selfHackAllServers(ns);
 }
 
@@ -15,7 +19,7 @@ async function selfHackAllServers(ns) {
 	// filter servers to target
 	servers = servers.filter(e => (isAttackable(e)));
 	var serverRefs = await buildServerRefs(ns, servers);
-	serverRefs = await filterServersToHack(ns, serverRefs); 
+	serverRefs = await filterServersToHack(ns, serverRefs);
 	// self hack all
 	await selfHackServers(ns, serverRefs);
 }
@@ -38,35 +42,37 @@ async function selfHackServers(ns, serversToHack) {
 }
 
 /** todo */
- function removeHackedServers(ns, servers, hackedServers) {
+function removeHackedServers(ns, servers, hackedServers) {
 	ns.print('servers to hack: ' + servers.length);
 	ns.print('servers hacked: ' + hackedServers.length);
 	for (const h of hackedServers) {
 		servers = servers.filter(s => (s.serverName != h.serverName));
 	}
 	ns.print('remaining servers to hack: ' + servers.length);
-	
+
 	return servers;
 }
 
 async function selfHackServer(ns, server) {
 	ns.print('server: ' + server.serverName + ' selfHack');
 	// setup params
-	let script = 'hack-seq.js';
+	var script = 'hack-seq.js';
 	var serverName = server.serverName;
-	let threads = await calcThreadsPerInst(ns, serverName, script);
+	var threads = await calcThreadsPerInst(ns, serverName, script);
 	// prep server
 	await killAllScripts(ns, serverName);
- 	await copyAllFiles(ns, 'home', serverName);
+	await ns.sleep(500);
+	await copyAllFiles(ns, 'home', serverName);
+	await ns.sleep(500);
 	// start hack 
+	ns.print('server: ' + serverName + ', run: ' + script + ', threads: ' + threads + ', args: ' + [serverName]);
 	await execThreaded(ns, serverName, script, threads, [serverName]);
-	ns.print('server: ' + serverName + ' run ' + script);
-	
+
 	return server;
 }
 
 /** todo */
- function filterServersToHack(ns, servers) {
+function filterServersToHack(ns, servers) {
 	ns.print("# servers: " + servers.length);
 	servers = servers.filter(e => (e.maxMoney > 0));
 	ns.print("# servers with money: " + servers.length);

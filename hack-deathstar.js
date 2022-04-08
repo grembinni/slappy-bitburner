@@ -1,5 +1,6 @@
 import {scanServer} from 'cerebro.js';
-import {buildServerRefs, calculateThreadsPerInstance, runThreaded} from 'bit-utils.js';
+import {runThreaded} from 'script-utils.js';
+import {buildServerRefs, calcThreadsPerInst} from 'server-utils.js';
 
 const bigUsage    = .02;
 const mediumUsage = .0075;
@@ -44,7 +45,7 @@ async function filterServers(ns, serverRefs) {
 /** todo */
 async function runBigServers(ns, serverRefs) {
 	var serverRefs = serverRefs.filter(e => (e.maxMoney >= maxMoney));
-	var threads = await calculateThreadsPerInstance(ns, 'home', 'hack-seq.js', 1, bigUsage);
+	var threads = await calcThreadsPerInst(ns, 'home', 'hack-seq.js', 1, bigUsage);
 	ns.tprint('servers: BIG, count: ' + serverRefs.length + ', threads: ' + thread + ', usagePercentage: ' + (bigUsage*serverRefs.length));
 	for (const serverRef of serverRefs) {
 		await runThreaded(ns, 'home', 'hack-seq.js', threads, [serverRef.serverName]);
@@ -54,7 +55,7 @@ async function runBigServers(ns, serverRefs) {
 /** todo */
 async function runMediumServers(ns, serverRefs) {
 	var serverRefs = serverRefs.filter(e => ((e.maxMoney < maxMoney) && (e.maxMoney >= minMoney)));
-	var threads = await calculateThreadsPerInstance(ns, 'home', 'hack-seq.js', 1, mediumUsage);
+	var threads = await calcThreadsPerInst(ns, 'home', 'hack-seq.js', 1, mediumUsage);
 	ns.tprint('servers: MEDIUM, count: ' + serverRefs.length + ', threads: ' + thread + ', usagePercentage: ' + (mediumUsage*serverRefs.length));
 	for (const serverRef of serverRefs) {
 		await runThreaded(ns, 'home', 'hack-seq.js', threads, [serverRef.serverName]);
@@ -64,7 +65,7 @@ async function runMediumServers(ns, serverRefs) {
 /** todo */
 async function runSmallServers(ns, serverRefs) {
 	var serverRefs = serverRefs.filter(e => (e.maxMoney >= minMoney));
-	var threads = await calculateThreadsPerInstance(ns, 'home', 'hack-seq.js', 1, smallUsage);
+	var threads = await calcThreadsPerInst(ns, 'home', 'hack-seq.js', 1, smallUsage);
 	ns.tprint('servers: SMALL, count: ' + serverRefs.length + ', threads: ' + thread + ', usagePercentage: ' + (smallUsage*serverRefs.length));
 	for (const serverRef of serverRefs) {
 		await runThreaded(ns, 'home', 'hack-seq.js', threads, [serverRef.serverName]);

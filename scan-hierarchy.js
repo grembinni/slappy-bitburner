@@ -1,4 +1,5 @@
-import {filterArray, isAttackable, unionArray} from 'bit-utils.js';
+import {isAttackable} from 'attack-utils.js';
+import {filterArray, unionArray} from 'bit-utils.js';
 
 /**
  * Does full hierarchal scan of the whole network, starting from the provided parent.

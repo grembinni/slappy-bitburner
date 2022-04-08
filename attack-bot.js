@@ -1,11 +1,11 @@
 import {scanServer} from 'cerebro.js';
-import {attackServers, filterArray, isAttackable} from 'bit-utils.js';
+import {attackServers, isAttackable} from 'attack-utils.js';
+import {filterArray} from 'bit-utils.js';
 
 /**
  * Attack all servers. Repeat attacks until all servers are unlocked.
  */
 export async function main(ns) {
-	ns.disableLog('ALL');	
 	await attackAllServers(ns);
 }
 

@@ -1,4 +1,4 @@
-import {isAttackable} from 'bit-utils.js';
+import {isAttackable} from 'attack-utils.js';
 
 /** todo */
 export async function main(ns) {
