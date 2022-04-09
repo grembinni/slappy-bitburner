@@ -8,7 +8,7 @@ import {buildServerRefs, calcThreadsPerInst, copyAllFiles, waitForMoney} from 's
  */
 export async function main(ns) {
 	ns.disableLog('scp');	
-	var serverSize = ns.args[0] ?? 64;
+	var serverSize = ns.args[0] ?? 32;
 	await createSwarm(ns, serverSize);
 }
 
@@ -18,45 +18,37 @@ async function createSwarm(ns, serverSize) {
 		var serverPrice = await ns.getPurchasedServerCost(serverSize);
 		var filteredServers = await lookupServersToHack(ns);
 		var hives = buildHiveArrays(ns, filteredServers);
-		ns.print('A'+hives.size);
-		for (var i = 0; i < hives.size; i++) {
+		var hiveSize = hives.size;
+		ns.print('A'+hiveSize);
+		await ns.sleep(6000);
+		for (var i = 0; i < hiveSize; i++) {
 			// check if exists
-			var newServer = 'swarm-' + i++;
+			var newServer = 'swarm-' + i;
 			var exists = await ns.serverExists(newServer);
-			
-			ns.print('B'+hives.size);
 			if (exists) {
-				ns.print('B'+hives.size);
 				exists = await refreshServer(ns, newServer, serverSize);
 			}
-			
-			ns.print('C'+hives.size);
 			if (!exists) {	
-				ns.print('C'+hives.size);
 				await createServer(ns, newServer, serverSize, serverPrice);	
 			}
-			
-			ns.print('D'+hives.size);
 			await startServer(ns, newServer, hives.get(i));
-			
-			if (i >= 25) { break; }
 		}
 
+		if (serverSize > 1048576) { break; }
 		ns.print('old server size: ' + serverSize.toString());
 		serverSize = getServerSize(serverSize);
 		ns.print('new server size: ' + serverSize.toString());
-		if (serverSize > 1048576) { break; }
-		await ns.sleep(serverSize * 500);
+		await ns.sleep(serverSize * 50);
 	} 
 }
 
 /** todo */
 function getServerSize(serverSize) {
-	
+	serverSize = serverSize * 4;
 	if (serverSize <= 0 || serverSize >= 1048576) {
-		serverSize = 99999999;
+		serverSize = 1048576;
 	}
-	return serverSize = serverSize * 2;
+	return serverSize;
 }
 
 /** todo */
@@ -104,57 +96,46 @@ async function refreshServer(ns, server, serverSize) {
 }
 
 /** todo */
-async function startServer(ns, server, targetServers) {
-	ns.print('a:'+targetServers.length);
+async function startServer(ns, hostServer, targetServers) {
 	var script = 'hack-seq.js';
 	var systemUsage = .95;
-	await copyAllFiles(ns, 'home', server);
-	let threads = await calcThreadsPerInst(ns, server, script, targetServers.length, systemUsage);
-	
-	for (var i = 0; i < targetServers.length; i++) {
-		await execThreaded(ns, server, script, threads, [targetServers[i].serverName]);
+	var hiveSize = targetServers.length;
+	await copyAllFiles(ns, 'home', hostServer);
+	let threads = await calcThreadsPerInst(ns, hostServer, script, hiveSize, systemUsage);
+	for (var i = 0; i < hiveSize; i++) {
+		await execThreaded(ns, hostServer, script, threads, [targetServers[i].serverName]);
 	}
 }
 
 /** todo */
 function buildHiveArrays(ns, servers) {
 	var hives = new Map();
-	ns.print('1:'+hives.size);
-	ns.print('2:'+servers.length);
+	var hiveCount = 10;
 	if (servers.length <= 25) {		
-		ns.print('3:'+hives.size);
 		var i = 0;
 		for (const server of servers) {
-			ns.print('3.1:'+hives.size);
 			hives.set(i++, [server]);
 		}
 	} else {		
-		ns.print('4:'+hives.size);
-		var splitIndex = servers.length - 20;
+		var splitIndex = servers.length - (25 - hiveCount);
 		var j = 0;
 		for (var i = 0; i < 25; i++) {
-			ns.print('5:'+i);
 			var _servers = [];
-			if (i < 5) {
-				var base = ~~(splitIndex/5);
-				var remainder = (splitIndex%5);
+			if (i < hiveCount) {
+				var base = ~~(splitIndex/hiveCount);
+				var remainder = (splitIndex%hiveCount);
 				if (remainder === i) {
-					ns.print('5.0:'+', '+base+', '+remainder);
 					base = base + 1;
 				}
 				var max = j + base;
 				for (j; j < max; j++) {
-					ns.print('5.1:'+i+', '+j+', '+base+', '+remainder);
 					_servers.push(servers[j]);
 				}
 			} else {
-				ns.print('6:'+i+', '+j);
 				_servers.push(servers[j++]);
 			}
-			hives.set(i, [_servers]);
-			ns.print('7:'+hives.size);
+			hives.set(i, _servers);
 		}
 	}
-	ns.print('8:'+hives.size);
 	return hives;
 }

@@ -56,17 +56,21 @@ function removeHackedServers(ns, servers, hackedServers) {
 async function selfHackServer(ns, server) {
 	ns.print('server: ' + server.serverName + ' selfHack');
 	// setup params
-	var script = 'hack-seq.js';
+	var bookstoreScript = 'bookstore.js';
+	var hackScript = 'hack-seq.js';
 	var serverName = server.serverName;
-	var threads = await calcThreadsPerInst(ns, serverName, script);
+	var threads = await calcThreadsPerInst(ns, serverName, hackScript);
 	// prep server
 	await killAllScripts(ns, serverName);
-	await ns.sleep(500);
+	await ns.sleep(600);
 	await copyAllFiles(ns, 'home', serverName);
-	await ns.sleep(500);
+	await ns.sleep(600);
+	ns.print('server: ' + serverName + ', run: ' + bookstoreScript + ', threads: 1, args: ' + [serverName]);
+	await execThreaded(ns, serverName, bookstoreScript, 1, [serverName]);
+	await ns.sleep(6000);
 	// start hack 
-	ns.print('server: ' + serverName + ', run: ' + script + ', threads: ' + threads + ', args: ' + [serverName]);
-	await execThreaded(ns, serverName, script, threads, [serverName]);
+	ns.print('server: ' + serverName + ', run: ' + hackScript + ', threads: ' + threads + ', args: ' + [serverName]);
+	await execThreaded(ns, serverName, hackScript, threads, [serverName]);
 
 	return server;
 }
