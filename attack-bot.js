@@ -13,14 +13,4 @@ export async function main(ns) {
  * attack all servers 
  */
 async function attackAllServers(ns) {
-	ns.print('attackAllServers');
-	let servers = await scanServer(ns, 'home');
-	let unNukedServers = servers;
-	unNukedServers = unNukedServers.filter(e => (isAttackable(e)));
-	while (unNukedServers.length > 0) {
-		let nukedServers = await attackServers(ns, unNukedServers);
-		ns.print('servers successfully attacked: ' + nukedServers.length);
-		unNukedServers = filterArray(unNukedServers, nukedServers);
-		await ns.sleep(60000);
-	}
 }
